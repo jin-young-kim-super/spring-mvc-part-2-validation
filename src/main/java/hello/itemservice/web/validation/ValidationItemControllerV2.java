@@ -81,7 +81,7 @@ public class ValidationItemControllerV2 {
         return "redirect:/validation/v2/items/{itemId}";
     }
 
-    @PostMapping("/add")
+    //@PostMapping("/add")
     public String addItemV2(@ModelAttribute Item item, BindingResult bindingResult,
                             RedirectAttributes redirectAttributes, Model model) {
 
@@ -101,6 +101,42 @@ public class ValidationItemControllerV2 {
             int resultPrice = item.getPrice() * item.getQuantity();
             if(resultPrice < 10000) {
                 bindingResult.addError(new ObjectError("item",null,null,"가격*수량은 10000 이상이여야 합니다. 현재값 : " + resultPrice));
+            }
+        }
+
+        // 검증 실패하면 결과 데이터를 사용자에게 그대로 보내주워야 한다.
+        if(bindingResult.hasErrors()) {
+            log.info("errors={}",bindingResult);
+            return "/validation/v2/addForm";
+        }
+
+        // 여기서부터는 성공 로직
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v2/items/{itemId}";
+    }
+
+    @PostMapping("/add")
+    public String addItemV3(@ModelAttribute Item item, BindingResult bindingResult,
+                            RedirectAttributes redirectAttributes, Model model) {
+
+        // 검증 로직(특정 필드에 대한 검증) -> 타입 오류는 @ModelAttribute Item item, BindingResult bindingResult에서 이미 잡는다.
+        if (!StringUtils.hasText(item.getItemName())) { // new Field에 들어간 bindingFailure false값은 타입 오류 값은 바인딩 오류가 아니라 필드의 검증 오류라는 뜻이다.
+            bindingResult.addError(new FieldError("item","itemName",item.getItemName(),false,new String[]{"required.item.itemName"},null,null));
+        }
+        if(item.getPrice() == null || (item.getPrice() < 1000 || item.getPrice() > 1000000)) {
+            bindingResult.addError(new FieldError("item","price",item.getPrice(),false,new String[]{"range.item.price"},new Object[]{1000,1000000},null));
+        }
+        if(item.getQuantity() == null || item.getQuantity() > 9999) {
+            bindingResult.addError(new FieldError("item","quantity",item.getQuantity(),false,new String[]{"max.item.quantity"},new Object[]{9999},null));
+        }
+
+        // 특정 필드 검증이 아닌 복합 룰 검증
+        if(item.getPrice() != null && item.getQuantity() != null) {
+            int resultPrice = item.getPrice() * item.getQuantity();
+            if(resultPrice < 10000) {
+                bindingResult.addError(new ObjectError("item",new String[]{"totalPriceMin"},new Object[]{10000,resultPrice},null));
             }
         }
 
