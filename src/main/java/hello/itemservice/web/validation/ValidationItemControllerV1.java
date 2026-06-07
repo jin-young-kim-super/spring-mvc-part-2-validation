@@ -54,7 +54,7 @@ public class ValidationItemControllerV1 {
         if(item.getPrice() == null || (item.getPrice() < 1000 || item.getPrice() > 1000000)) {
             errors.put("price","가격은 1000 ~ 1000000까지만 허용됩니다.");
         }
-        if(item.getQuantity() == null || item.getQuantity() <= 9999) {
+        if(item.getQuantity() == null || item.getQuantity() > 9999) {
             errors.put("quantity", "수량은 9999개까지만 허용됩니다.");
         }
 
