@@ -117,7 +117,7 @@ public class ValidationItemControllerV2 {
         return "redirect:/validation/v2/items/{itemId}";
     }
 
-    @PostMapping("/add")
+    //@PostMapping("/add")
     public String addItemV3(@ModelAttribute Item item, BindingResult bindingResult,
                             RedirectAttributes redirectAttributes, Model model) {
 
@@ -137,6 +137,50 @@ public class ValidationItemControllerV2 {
             int resultPrice = item.getPrice() * item.getQuantity();
             if(resultPrice < 10000) {
                 bindingResult.addError(new ObjectError("item",new String[]{"totalPriceMin"},new Object[]{10000,resultPrice},null));
+            }
+        }
+
+        // 검증 실패하면 결과 데이터를 사용자에게 그대로 보내주워야 한다.
+        if(bindingResult.hasErrors()) {
+            log.info("errors={}",bindingResult);
+            return "/validation/v2/addForm";
+        }
+
+        // 여기서부터는 성공 로직
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v2/items/{itemId}";
+    }
+
+    @PostMapping("/add")
+    public String addItemV4(@ModelAttribute Item item, BindingResult bindingResult,
+                            RedirectAttributes redirectAttributes, Model model) {
+        // BindinsingResult를 Item 바로 뒤에 위치시킴으로 인해, 이미 검증 대상이 Item이라는 정보를 가지고 있다.
+        // -> BindingResult가 target 객체를 이미 알고 있음으로, new Field, new ObjectError 없이 검증 오류를 처리할 수가 있다.
+        log.info("objectName={}",bindingResult.getObjectName());
+        log.info("target={}",bindingResult.getTarget());
+
+        // 검증 로직(특정 필드에 대한 검증) -> 타입 오류는 @ModelAttribute Item item, BindingResult bindingResult에서 이미 잡는다.
+        if (!StringUtils.hasText(item.getItemName())) { // new Field에 들어간 bindingFailure false값은 타입 오류 값은 바인딩 오류가 아니라 필드의 검증 오류라는 뜻이다.
+            //bindingResult.addError(new FieldError("item","itemName",item.getItemName(),false,new String[]{"required.item.itemName"},null,null));
+            bindingResult.rejectValue("itemName","required"); // 결국에는 rejectValue안의 매개변수를 가지고 뒤에서 위 new Field 코드를 자동 작성 해준다.
+        }
+        if(item.getPrice() == null || (item.getPrice() < 1000 || item.getPrice() > 1000000)) {
+            //bindingResult.addError(new FieldError("item","price",item.getPrice(),false,new String[]{"range.item.price"},new Object[]{1000,1000000},null));
+            bindingResult.rejectValue("price","range",new Object[]{1000,1000000},null);
+        }
+        if(item.getQuantity() == null || item.getQuantity() > 9999) {
+            //bindingResult.addError(new FieldError("item","quantity",item.getQuantity(),false,new String[]{"max.item.quantity"},new Object[]{9999},null));
+            bindingResult.rejectValue("quantity","max",new Object[]{9999},null);
+        }
+
+        // 특정 필드 검증이 아닌 복합 룰 검증
+        if(item.getPrice() != null && item.getQuantity() != null) {
+            int resultPrice = item.getPrice() * item.getQuantity();
+            if(resultPrice < 10000) {
+                //bindingResult.addError(new ObjectError("item",new String[]{"totalPriceMin"},new Object[]{10000,resultPrice},null));
+                bindingResult.reject("totalPriceMin",new Object[]{10000,resultPrice},null);
             }
         }
 
