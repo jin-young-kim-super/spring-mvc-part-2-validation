@@ -1,0 +1,21 @@
+검증 오류 코드의 2가지 종류
+1. 개발자가 직접 넣은 오류 코드(BindingResult.reject, BindingResult.rejectValue를 통해서!)
+2. 스프링이 직접 추가한 오류 코드(주로 컨트롤러 실행 전에 타입 미스매칭 관련, ex) 상품 가격에 문자 q를 삽입해서 화면에 뜨는 오류 메시지를 확인해라)
+-> 이번 시간에는 스프링이 직접 추가한 오류 코드를 어떻게 다룰 것인가에 대해서 학습한다.
+
+예를 들어, 상품 가격에 q를 넣게 되면 화면에 아래와 같은 에러 메시지를 출력한다.
+Failed to convert property value of type java.lang.String to required type
+java.lang.Integer for property price; nested exception is
+java.lang.NumberFormatException: For input string: "q"
+-> 그러나 이런 오류 메시지는 당연히 사용자에게 보여줘서는 안되는 불친절한 메시지이다.
+그럼 대체 이러한 오류 코드는 어디서 생성된 걸까?
+그건 스프링이 컨트롤러에서 스프링 타입 컨버터(추후에 학습)에 의해 타입 검사를 하다가 타입 미스매치가 발생해서 BindingResult의 reject(), rejectValue()를 통해 넣은
+default message이다.(new FiledError new ObjectError에 defaultMessage를 입력하는 인자가 있었다는 것을 떠올려라)
+즉, 결국에 이때 스프링도 MessageCodesResolver와 BindingResult를 사용한다는 것이다.
+스프링은 BindingResult.rejectValue()에서 codes 인자에 아래의 오류 코드를 생성 후 입력한다.
+codes[typeMismatch.item.price,typeMismatch.price,typeMismatch.java.lang.Integer,typeMismatch]
+그러나 errors.properties에 위 에러 코드가 정의돼 있지 않기 때문에 스프링이 정한 defaultMessage가 그대로 출력이 되버리는 것이다.
+
+해결법 : errors.properites에 typeMismatch 에러 코드를 정의하면 더이상 이상한 에러 메시지가 출력이 안 될 것이다.
+
+
