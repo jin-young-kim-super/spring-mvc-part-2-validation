@@ -1,0 +1,33 @@
+// 상품 등록 폼 전용 메시지
+required.item.itemName=상품 이름은 필수입니다.
+range.item.price=가격은 {0} ~ {1} 까지 허용합니다.
+max.item.quantity=수량은 최대 {0} 까지 허용합니다.
+
+// 모든 폼에서 사용 가능
+required = 필수 값 입니다.
+min= {0} 이상이어야 합니다.
+range= {0} ~ {1} 범위를 허용합니다.
+max= {0} 까지 허용합니다.
+
+상품 등록 폼 전용 메시지는 굉장히 오류 메시지 내용이 친절하다. 근데 문제점이 있다. 
+만약 다른 폼이 20개 더 있다면 각 폼에 대한 오류 메시지를 일일이 써야 한다는 점이다. 그건 비용이 너무나도 많이 든다. 
+그리고 모든 폼에서 사용 가능한 범용적인 오류 에러 메시지를 사용하는 것도 하나의 방법이다. 
+그러나 개발자는 폼에 따라 혹은 상황에 따라 어떨 때는 전용 메시지를 사용하고 또 어떨 떄에는 범용적인 메시지를 사용해야 할 경우가 대부분이다. 
+또 치명적인 문제점이 있다. 만약 개발자가 처음에는 범용 메시지를 사용하다가 요구 사항이 변경이 되면 범용 메시지를 사용하는 모~~~든 코드를 일일이 변경해야 한다는 것이다.
+변경 전 ) bindingResult.addError(new FieldError("item","itemName",item.getItemName(),false,new String[]{"【required"】},null,null));
+변경 후 ) bindingResult.addError(new FieldError("item","itemName",item.getItemName(),false,new String[]{"【required.item.itemName】"},null,null));
+
+다행히도 스프링은 MessageCodesResolver는 위 문제를 해결해준다. 
+ex)
+new String[]{"【required.item.itemName】", "【required】"} 
+-> MessageCodesResolver는 오류 메시지에 세밀한 내용을 우선적으로 찾고 그게 없으면 세밀하지 않은 required가 있는지를 찾아서 출력한다. 즉 스프링은 BindingResult에 자동 저장되어 있는 객체명(Item)과 개발자가 지정한
+필드명(itemName)의 조합으로 먼저 오류 메시지를 찾는 다는 것이다. 그러면 오류 메시지의 요구사항이 변경이 돼도 errors.properties파일만 변경하면 된다.
+(required마저도 없으면 defulat message를 출력)
+
+다음 시간에는 MessageCodesResolver에 대해 알아 보겠다.
+
+
+
+
+
+ 
