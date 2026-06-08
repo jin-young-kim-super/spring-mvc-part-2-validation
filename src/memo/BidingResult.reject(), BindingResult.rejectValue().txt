@@ -1,0 +1,30 @@
+BidingResult.reject(), BindingResult.rejectValue()읜 내부에서 사실 MessageCodesResovler가 돌아 간다는 것에 주의를 하자. 
+-> 더 구체적으로는 MessageCodesResolver.resolveMessageCodes()가 객체+필드를 조합해서 new ObjectError(), new FieldError()를 생성한다.
+
+
+DefaultMessageCodesResolver의 기본 메시지 생성 규칙(MessageCodesResolver의 기본 구현체)
+
+객체 오류(new ObjectError())
+```
+객체 오류의 경우 다음 순서로 2가지 생성
+1.: code + "." + object name
+2.: code
+예) 오류 코드: required, object name: item
+1.: required.item
+2.: required
+
+
+필드 오류(new FiledError())
+```
+필드 오류의 경우 다음 순서로 4가지 메시지 코드 생성
+1.: code + "." + object name + "." + field
+2.: code + "." + field
+3.: code + "." + field type
+4.: code
+예) 오류 코드: typeMismatch, object name "user", field "age", field type: int
+1. "typeMismatch.user.age"
+2. "typeMismatch.age"
+3. "typeMismatch.int"
+4. "typeMismatch"
+
+
