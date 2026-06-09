@@ -23,4 +23,19 @@ public class Item {
 
 }
 
-이번 시간에는 Bean Validation을 스프링과 통합하지 않고, 먼저 순수한 Bean Validation 사용법을 테스트 코드로 알아 보자. 
+이번 시간에는 Bean Validation을 스프링과 통합하지 않고, 먼저 순수한 Bean Validation 사용법을 테스트 코드로 알아 보자.
+-> implementation 'org.springframework.boot:spring-boot-starter-validation'를 추가해야 Bean Validation을 사용할 수가 있다. 스프링 부트는
+구현체로 Hibernate의 validator를 가져 온다.
+(실무에서는 대부분 하이버네이트 구현체를 사용)
+
+
+// java 표준 에노테이션
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+-> Bean Validation의 구현체가 위 2개의 에노테이션은 어떤 것이여도 동작한다.
+
+import org.hibernate.validator.constraints.Range;
+-> 패키지 명에서도 있듯이 @Range 에노테이션은 Bean Validation 인터페이스에 정의돼 있는 것이 아닌 하이버네이트 구현체에서만 제공하는 기능임에 주의하자
+
+순수 Bean Validation은 잘 사용하지 않으므로, 이번 시간은 그냥 참고만 하면 된다.
+
