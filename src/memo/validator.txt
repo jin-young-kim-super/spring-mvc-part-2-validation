@@ -1,4 +1,4 @@
-이번 시간에는 컨트롤러 내의 검증 로직을 따로 분리하는 학습을 한다. 
+이번 시간에는 컨트롤러 내의 검증 로직을 따로 분리하는 학습을 한다.
 
 
 
@@ -11,4 +11,38 @@ return Item.class.isAssignableFrom(clazz)
 이건 "clazz를 ITem에 대입할 수 있냐?"를 묻는 문법이다.
 코딩을 하다 보면 Item 을 상속받은 자식 클래스가 만들어 질 때도 있다. 이떄 자식 클래스라도 isAsssignableFrom을 사용하면
 그 자식 클래스의 Item 필드를 검증(validation)할 수가 있다.
+
+
+사실 저번 시간에 스프링이 제공하는 validator 인터페이스와 @Component를 사용해서 검증 로직을 구현하였다.
+-> 근데 굳이 저것들을 사용해야 할까? 그냥 일반 클래스로 만든 다음에 addItem 메서드 내부에서 new ItemValidator를 생성하고, suppport(), validate()를 호출해도 되지 않냐?
+실은, 스프링이 제공하는 validator와 @Component를 사용하여 추가적인 도움을 받을 수 있다. 그게 아니면 사실 이것들을 사용할 이유가 없다.
+이번 시간에는 그것에 대해 알아 보겠다.
+
+@InitBinder
+ public void init(WebDataBinder dataBinder) {
+     dataBinder.addValidators(itemValidator);
+}
+-> @InitBinder는 컨트롤러가 호출될 떄마다 실행이 된다는 점에 주의하자!
+dataBinder.addValidators(itemValidator)를 통해 해당 컨트롤러 내에서 필요한 모~~~든 검증 로직 한 곳에 등록해서 사용할 수가 있다.
+(모든 컨트롤러에 적용되게 하는 글로벌 등록 방식도 있다. 그건 추후에 설명하겠다)
+
+
+addItemV1 버전과 addItemV6 버전을 비교해서 코드가 얼마나 깔끔해 졌는지 확인하자!
+
+
+// 검증기의 글로버 등록하는 법(모든 컨트롤러에 적용)
+@SpringBootApplication
+public class ItemServiceApplication implements WebMvcConfigurer {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ItemServiceApplication.class, args);
+	}
+
+	@Override
+	public Validator getValidator() {
+		return new ItemValidator();
+	}
+}
+
+
 

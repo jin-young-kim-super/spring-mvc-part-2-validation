@@ -10,6 +10,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -25,6 +27,11 @@ public class ValidationItemControllerV2 {
 
     private final ItemRepository itemRepository;
     private final ItemValidator itemValidator;
+
+    @InitBinder
+    public void init(WebDataBinder dataBinder) {
+        dataBinder.addValidators(itemValidator);
+    }
 
     @GetMapping
     public String items(Model model) {
@@ -198,13 +205,34 @@ public class ValidationItemControllerV2 {
         return "redirect:/validation/v2/items/{itemId}";
     }
 
-    @PostMapping("/add")
+    //@PostMapping("/add")
     public String addItemV5(@ModelAttribute Item item, BindingResult bindingResult,
-                            RedirectAttributes redirectAttributes, Model model) {
+                            RedirectAttributes redirectAttributes) {
 
         if (itemValidator.supports(Item.class) == true) {
             itemValidator.validate(item,bindingResult);
         }
+
+        // 검증 실패하면 결과 데이터를 사용자에게 그대로 보내주워야 한다.
+        if(bindingResult.hasErrors()) {
+            log.info("errors={}",bindingResult);
+            return "/validation/v2/addForm";
+        }
+
+        // 여기서부터는 성공 로직
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v2/items/{itemId}";
+    }
+
+    @PostMapping("/add")
+    // @Validated를 사용하면 WebDataBinder의 모든 검증기의 support() 메서드를 돌려서 해당되는 검증기를 추출하여 validate()를 실행하여 BindingResult에 자동으로 결과를 넣어준다
+    // 이러한 스프링의 추가적인 도움을 받기 위하여 스프링이 제공하는 validator 인터페이스를 사용한 것이다.(거기에 support, validate 메서드가 정의되어 있음을 떠올려 봐라)
+    // 그리고 당연한 이야기이지만 스프링의 도움을 받기 위하여 ItemValidator를 스프링 빈으로 등록해야 한다(그래서 우리는 @Component를 사용함)
+    // -> 이러한 스프링가 추가적으로 제공하는 @Validated를 통해 addItem 내에 검증 로직이 사라졌다.
+    public String addItemV6(@Validated @ModelAttribute Item item, BindingResult bindingResult,
+                            RedirectAttributes redirectAttributes) {
 
         // 검증 실패하면 결과 데이터를 사용자에게 그대로 보내주워야 한다.
         if(bindingResult.hasErrors()) {
