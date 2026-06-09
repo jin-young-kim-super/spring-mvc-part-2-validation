@@ -1,0 +1,14 @@
+이번 시간에는 컨트롤러 내의 검증 로직을 따로 분리하는 학습을 한다. 
+
+
+
+
+
+return Item.class.isAssignableFrom(clazz)
+-> 그냥 Item.class == clazz로 해도 되지만 한계점이 있다. 
+만약 Item을 상속 받은 자식 클래스에서는 == 연산 결과가 false가 된다. 
+그래서 isAsssignableFrom을 사용한다. 
+이건 "clazz를 ITem에 대입할 수 있냐?"를 묻는 문법이다.
+코딩을 하다 보면 Item 을 상속받은 자식 클래스가 만들어 질 때도 있다. 이떄 자식 클래스라도 isAsssignableFrom을 사용하면
+그 자식 클래스의 Item 필드를 검증(validation)할 수가 있다.
+
