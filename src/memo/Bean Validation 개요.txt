@@ -1,0 +1,26 @@
+사실, 모든 검증 로직을 일일이 짜기는 매우 번거롭다. 
+실무에서 대부분의 검증 로직은 특정 필드가 빈값인지 아닌지, 특정 범위를 벗어 나는지 등의 검증이다. 즉 대부분의 프로젝트에서 공통적으로 사용되는 검증 로직이다. 
+-> 그래서 스프링은 @NotBlank, @Range(min, max), @Max 등의 개발자들이 공통적이 자주 사용할 것 같은 검증 로직을 에노테이션으로 제공한다. 
+이 에노테이션을 스프링 프레임워크 내부에서 처리하는 것이 바로 우리가 이번에 배울 Bean Validation이다. 
+그러나 Bean Validation은 스프링이 제공하는 기능이 아닌 자바 표준(JSR-380)이 제공하는 인터페이스이다. 고로 구현체는 오픈 소스에서 가져 올 수도 있다. 
+그냥 제일 안전하고 검증된 구현체를 끼우면 된다. (대표적으로 하이버네이트에서 구현체를 제공한다)
+
+
+ex)
+public class Item {
+ private Long id;
+
+ @NotBlank
+ private String itemName;
+
+ @NotNull
+ @Range(min = 1000, max = 1000000)
+ private Integer price;
+
+ @NotNull
+ @Max(9999)
+ private Integer quantity;
+
+}
+
+이번 시간에는 Bean Validation을 스프링과 통합하지 않고, 먼저 순수한 Bean Validation 사용법을 테스트 코드로 알아 보자. 
