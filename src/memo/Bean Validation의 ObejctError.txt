@@ -1,0 +1,44 @@
+@NotBlank 등의 에노테이션은 현재 필드 검증용으로 필드에만 적용되고 있다. 
+그런데 만약 글로벌 에러가 발생해서 new ObjectError를 통해 글로벌 에러를 처리하고 싶다면 어떻게 해야 할까를 이번 시간에 학습한다. 
+
+Q. 왜 네이밍을 @ScriptAssert라고 했을까
+A. 
+Assert의 의미
+
+프로그래밍에서 assert는
+"이 조건은 반드시 참이어야 한다"
+라는 뜻이다.
+
+예를 들어 자바의:
+assert age > 0;의 의미는 나이는 반드시 0보다 커야 한다. 이다.
+
+JUnit에서도 assertEquals(10, result);는result는 반드시 10이어야 한다.라는 의미다.
+
+Script의 의미 Bean Validation의 일반적인 애노테이션은
+@NotNull
+@Min
+@Max
+처럼 고정된 규칙을 검사한다.
+
+그런데 가끔은
+// script
+startDate < endDate
+price * quantity >= 10000
+password == passwordConfirm
+처럼 복합 조건을 검사해야 한다.
+이런 경우를 위해 @ScriptAssert가 만들어졌다.
+
+
+
+Java 15부터는 java 안의 javascript 엔진이 완전히 삭제가 되었기 때문에 더이상 @ScriptAssert 사용이 안 된다.
+-> 그리고 실무에서도 사실 거의 사용되지 않는다. 왜냐하면 제약이 많기 때문이다.
+_this.price * _this.quantity >= 10000 이러한 단순한 로직은 괜찮겠지만, 실무에서는 다른 패키지에 있는 객체를 불러 들이고, DB 조회도 필요한 검증이 실무에서는 일반적이다.
+이러한 대응을 @ScriptAssert로 하기에는 제약이 너무 많다.
+그래서 이러한 ObjectError는 컨트롤러 내에서 직접 자바로 코딩하는 것이 올바르다.
+
+
+실무 기준
+1. FiedlError는 Bean validation 사용
+2. OBejctError는 컨트롤러 내에서 직접 구현(되도록 메서드로 뺴자)
+
+
