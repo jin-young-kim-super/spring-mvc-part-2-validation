@@ -1,0 +1,112 @@
+우리는 이제 ItemValidator를 WebDataBinder.add(ItemValidtor)를 통해 validator를 등록하는 부분을 제거하였다 
+그러나 여전히 validator는 잘 동작한다. 
+그 이유는 저번 시간에 gradle에 Bean validation을 import를 하였는데, 스프링 부트는 그걸 자동으로, 더 정확히는 LocalValidationFactoryBean 구현체 자동으로 WebDataBinder.add를
+통하여 자동으로 이 validator를 "글로벌" 적용을 해 준다.
+그래서 @Validated만 있으면 어떤 컨트롤러에서도 자동으로 validator가 동작한다. (LocalValidationFactoryBean에 대해서는 아래에 자세한 설명을 해 놓았다)
+
+Bean validation은 기존 validator와 똑같은 내부 동작을 한다.
+Bindingresult.addError(new FieldError, new ObjectError)를 통해 에러 정보를 BindingResult에 담아 준다는 것에 주의하자.
+
+Q. 순수 validator 인터페이스는 supports 메서드를 통해 검증 대상 객체(Item 객체)를 validator 구현체가 지원을 하는 지 안 하는 지 확인을 하고
+만약 지원을 한다면 그 validator 구현체를 통해서(구체적으로는 그 구현체의 validate 메서드)를 통해서 검증을 하고, 만약 지원을 하지 않으면
+WebDataBinder에 등록돼 있는 다른 validator를 루프문으로 돌리면서 다시 support()를 돌려서 적용할 validator를 선택한다.
+그러면 글로벌 적용된 validator는 어떻게 선택되는 것일까?
+
+A. 검증 대상의 객체(Item)에 @NotBlank, @Max 등의 에노테이션이 있으면, 즉 Bean validation이 제공하는 에노테이션이 있으면, 그 객체를 Bean Validation이 지원하는 객체로 판단하여
+validator가 적용이 되게 된다. 아레 부분에 자세한 설명을 해놓았지만 결국 Bean Validation도 validator 인터페이스를 상속받은 구현체이다.
+즉 Bean validation 이전에 학습했던 수많은 내용들은 어떻게 보면 이 Bean Validation을 이해하기 위한 전단계였다.
+
+
+매우 중요한 주의점
+-> 이전 학습에서 우리는 직접 글로벌 validator를 등록했다. 스프링 부트는 수동 등록을 우선 순위로 하기 때문에 만약 이렇게 글로벌 validator가 이미 등록이돼 있으면
+Bean Validation의 validator를 등록하지 않는 점을 주의하자! 그 이유는 아래의 LocalValidatorFactoryBean 구현체의 의존 관계 객체인 targetValidator가 배열이 아님을 보면 알 수가 있다.
+
+@SpringBootApplication
+public class ItemServiceApplication implements WebMvcConfigurer {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ItemServiceApplication.class, args);
+	}
+
+    // 글로벌 validator
+	@Override
+	public Validator getValidator() {
+		return new ItemValidator();
+	}
+}
+
+Bean Validator의 구현체인 LocalValidatorFactoryBean도 결국에는 WebDataBinder에 등록이 된다고 했다. 그러나 이 Bean Validation의 구현체는 호출 과정이 조금 다르다.
+구현체 호출 전에 LocalValidationFactoryBean(어댑터)이라는 객체를 통해서 호출이된다.
+왜냐하면 스프링 프레임워크 내부에서는 하이버네이트 구현체에 의존하고 싶지 않기 떄문이다. 외부 라이브러리로 하이버네이트가 등록이 돼 있으면 스프링 내부에서는 호출을 할 때 그 하이버네이트 구현체를
+직접 호출하지 않고 LocalValidationFactoryBean이라는 인터페이스로만 호출을 하고 싶어서 이다. 그래야지만 OCP를 지킬 수가 있고, 하이버네이트 이외의 다른 Bean Validation 구현체도 자유롭게
+확장할 수 있기 때문이다.
+
+대략 이런 느낌이다.
+@Component
+public class LocalValidatorFactoryBean implements Validator { // Bean Validation도 결국에는 validator 인터페이스의 구현체에 불과하다.
+
+    private jakarta.validation.Validator targetValidator; // OCP
+
+    @Overide
+    support()
+
+    @Overide
+    validate()
+}
+
+Bean validation의 흐름
+ex)
+Spring Validator
+          ↓
+LocalValidatorFactoryBean
+          ↓
+Hibernate Validator
+
+순수 validtor 구현체의 흐름
+Spring Validator
+          ↓
+ItemValidator
+
+그러나 Bean Validation이든 순수 validator이든 공통적인 특징이 있다.
+우리가 validator를 구현한 ItemValidator 만들 때를 떠올려 보자. validator는 특정 필드, 글로벌 오류에 대한 검증이였다. 즉 타입 검증이 된 이후에 하는 검증이였다.
+이러한 이유로 만약에 @ModelAttribute에 있는 Item 객체에 대한 타입 미스매칭을 먼저 실행한 다음에 타입 미스매칭이 없는 필드에 한해서만 validator가 검증이 된다.
+생각해보면 너무나도 당연한 거다. 애초에 타입 미스매칭이 일어난 필드에 대해서는 범위 검증, 빈값 검증 등을 할 이유가 없다.
+
+
+Q. validator은 @PathVariable에 대해서는 검증을 안 하나?
+A. Bean Validation은 @PathVariable도 검증할 수 있다.
+다만 @ModelAttribute처럼 WebDataBinder를 통해 검증되는 것이 아니라, 메서드 파라미터 검증(Method Validation) 으로 동작한다.
+
+@ModelAttribute의 경우 검증 순서
+HTTP Request
+    ↓
+WebDataBinder
+    ↓
+Item 【객체】 생성
+    ↓
+Bean Validation
+    ↓
+BindingResult
+
+@PathVariable의 경우 검증 순서
+MethodValidationInterceptor
+      ↓
+Hibernate Validator
+      ↓
+ConstraintViolationException(BindingResult 객체가 아님에 주의)
+-> 검증 대상이 객체일 때에만 WebDataBinder의 등록된 validator를 사용하여 BindingResult를 사용한다.
+
+ex)
+@Validated
+@Controller
+public class ItemController {
+
+    @GetMapping("/items/{id}")
+    public String find(
+        @Min(1)
+        @PathVariable Long id
+    ) {
+        return "item";
+    }
+}
+
