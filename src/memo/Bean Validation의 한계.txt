@@ -1,0 +1,27 @@
+결론 : 등록과 수정 시 Item의 Bean Validation의 에노테이션(@NotNull, @NotBlank 등)을 【공통적】으로 사용하고 있다.
+그래서 만약 등록과 수정의 Item 검증의 요구사항이 바뀌게 되면 충돌이 일어난다.
+예를 들어, 수정에서는 Item Id가 반드시 필요하기 때문에 @NotNull을 반드시 Long Id에 붙여 줘야 한다.
+그러나 등록 검증에서도 【공통적】으로 같은 Item을 사용하기 때문에 등록 폼에서 데이터 전송 시 Item id가 없다면서 에러가 발생을 한다.
+등록 과정에서는 Item id가 없기 때문에 @NotNull 검사를 하면 안된다.
+이러한 한계가 존재를 하는데, 다음 시간에는 이러한 한계를 어떻게 돌파를 하는 지 알아 본다.
+
+
+
+
+@Data
+public class Item {
+ @NotNull //수정 요구사항 추가
+ private Long id;
+
+ @NotBlank
+ private String itemName;
+
+ @NotNull
+ @Range(min = 1000, max = 1000000)
+ private Integer price;
+
+ @NotNull
+ //@Max(9999) //수정 요구사항 추가
+ private Integer quantity;
+
+}
