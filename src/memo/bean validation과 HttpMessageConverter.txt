@@ -1,0 +1,16 @@
+여태까지 Bean Validation을 Form 데이터에만 적용을 해봤다. 
+사실은 Bean Validation은 HTTP API 리퀘스트 시에도 데이터를 검증할 수가 있다 
+이번 시간에 학습할 것은 @RequestBody에 들어 오는 데이터를 검증하는 법이다.
+
+근데 HttpMEssageConver는 조금 주의해야 할 것이 있다.
+@ModelAttribute의 경우, 타입 에러가 나도 타입 매칭에 성공한 필드에 대해서는 validator가 작동하였다. 즉 컨트롤러가 실행이 되었다.
+
+그러나 HttpMessageConverter는 다르다.
+만약 price에 숫자가 아닌 qqq를 넣게 되면, 컨트롤러가 실행이 안 되서 validator가 애초에 실행이 안되며, 스프링에서 Exception을 던진다.
+왜냐하면 애초에 HTTP APi 데이터의 경우 HttpMessageConverter에 의해 JSON 객체가 완전히 ITemSaveForm 데이터에 완전히 매핑이 되지 않으면 ItemSaveForm 객체 자체를
+생성해 주지 않는다. 그래서 객체가 없으니 당연히 @Validated가 실행이 안 되며 컨트롤러도 실행이 될 수가 없다.
+
+API 요청 리퀘스트를 컨트럴로 레벨에서는 3가지로 나누어 생각해야 한다.
+1. 성공 요청
+2. 실패 요청 : JSON이 객체로 변화x
+3. 검증 오류 요청 : 객체 생성 후 검증 에러
